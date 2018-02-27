@@ -40,20 +40,19 @@ Components
 import json
 import os
 import re
+import socket
 import urllib.error
 import urllib.parse
 import urllib.request
-import socket
-import xarray as xr
 from collections import OrderedDict
 from datetime import datetime, timedelta
 from math import ceil
 from typing import Sequence, Tuple, Optional, Any
 
-from shapely.geometry import Polygon
-
+import xarray as xr
 from owslib.csw import CatalogueServiceWeb
 from owslib.namespaces import Namespaces
+from shapely.geometry import Polygon
 
 from cate.conf import get_config_value, get_data_stores_path
 from cate.conf.defaults import NETCDF_COMPRESSION_LEVEL
@@ -104,6 +103,8 @@ _CSW_MAX_RESULTS = 1000
 _CSW_METADATA_CACHE_FILE = 'catalogue_metadata.xml'
 _CSW_CACHE_FILE = 'catalogue.xml'
 
+_CONFIG_ODP_CACHE_EXPIRATION_DAYS = 'odp_cache_expiration_days'
+
 # by default there is no timeout
 socket.setdefaulttimeout(10)
 
@@ -125,7 +126,8 @@ def set_default_data_store():
     All data sources of the FTP data store are read from a JSON file ``esa_cci_ftp.json`` contained in this package.
     This JSON file has been generated from a scan of the entire FTP tree.
     """
-    DATA_STORE_REGISTRY.add_data_store(EsaCciOdpDataStore())
+    index_cache_expiration_days = get_config_value(_CONFIG_ODP_CACHE_EXPIRATION_DAYS, 1)
+    DATA_STORE_REGISTRY.add_data_store(EsaCciOdpDataStore(index_cache_expiration_days=index_cache_expiration_days))
 
 
 def find_datetime_format(filename: str) -> Tuple[Optional[str], int, int]:
@@ -203,6 +205,7 @@ def _load_or_fetch_json(fetch_json_function,
         cache_json_file = os.path.join(cache_dir, cache_json_filename)
         cache_timestamp_file = os.path.join(cache_dir, cache_timestamp_filename)
 
+    if cache_used and cache_expiration_days > 0:
         timestamp = datetime(year=2000, month=1, day=1)
         if os.path.exists(cache_timestamp_file):
             with open(cache_timestamp_file) as fp:

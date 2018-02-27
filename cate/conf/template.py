@@ -120,3 +120,8 @@ excluded_data_sources = [
 # https://matplotlib.org/examples/color/colormaps_reference.html
 # default_color_map = 'jet'
 default_color_map = 'inferno'
+
+# Default cache expiration value (in days) for index data fetch from Open Data Portal.
+# To disable caching, set value to 0.
+#
+# odp_cache_expiration_days = 1
