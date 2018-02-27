@@ -55,7 +55,7 @@ from owslib.namespaces import Namespaces
 from shapely.geometry import Polygon
 
 from cate.conf import get_config_value, get_data_stores_path
-from cate.conf.defaults import NETCDF_COMPRESSION_LEVEL
+from cate.conf.defaults import DEFAULT_ODP_CACHE_EXPIRATION_DAYS, NETCDF_COMPRESSION_LEVEL
 from cate.core.ds import DATA_STORE_REGISTRY, DataAccessError, DataStore, DataSource, Schema, open_xarray_dataset
 from cate.core.opimpl import subset_spatial_impl, normalize_impl
 from cate.core.types import PolygonLike, TimeLike, TimeRange, TimeRangeLike, VarNamesLike, VarNames
@@ -126,7 +126,7 @@ def set_default_data_store():
     All data sources of the FTP data store are read from a JSON file ``esa_cci_ftp.json`` contained in this package.
     This JSON file has been generated from a scan of the entire FTP tree.
     """
-    index_cache_expiration_days = get_config_value(_CONFIG_ODP_CACHE_EXPIRATION_DAYS, 1)
+    index_cache_expiration_days = get_config_value(_CONFIG_ODP_CACHE_EXPIRATION_DAYS, DEFAULT_ODP_CACHE_EXPIRATION_DAYS)
     DATA_STORE_REGISTRY.add_data_store(EsaCciOdpDataStore(index_cache_expiration_days=index_cache_expiration_days))
 
 
@@ -191,6 +191,7 @@ def _load_or_fetch_json(fetch_json_function,
     """
     json_obj = None
     cache_json_file = None
+    cache_timestamp_file = None
 
     if cache_used:
         if cache_dir is None:
