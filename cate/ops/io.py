@@ -355,14 +355,29 @@ def write_netcdf3(obj: xr.Dataset, file: str, engine: str = None):
 @op_input('obj')
 @op_input('file', file_open_mode='w', file_filters=[dict(name='NetCDF 4', extensions=['nc'])])
 @op_input('engine')
-def write_netcdf4(obj: xr.Dataset, file: str, engine: str = None):
+@op_input('compression', nullable=True)
+@op_input('chunks', nullable=True, data_type=DictLike)
+def write_netcdf4(obj: xr.Dataset, file: str, engine: str = None, compression: int = None, chunk_size: dict = None):
     """
     Write a data object to a netCDF 4 file. Note that the data object must be netCDF-serializable.
 
     :param obj: A netCDF-serializable data object.
     :param file: The netCDF file path.
     :param engine: Optional netCDF engine to be used
+    :param compression: Compression level of netCDF4 file.
+    :param chunk_size: Chunk size for each dimension of the variable.
     """
+    encoding_update = {}
+
+    if compression:
+        encoding_update.update({'zlib': True, 'complevel': compression})
+    if chunk_size:
+        encoding_update.update({'chunksize': chunk_size})
+
+    if encoding_update:
+        for var in obj.variables:
+            var.encoding.update(encoding_update)
+
     obj.to_netcdf(file, format='NETCDF4', engine=engine)
 
 
