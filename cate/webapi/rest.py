@@ -69,8 +69,8 @@ THREAD_POOL = concurrent.futures.ThreadPoolExecutor()
 
 _NUM_GEOM_SIMP_LEVELS = 8
 
+_DEFAULT_ROW_PER_PAGE = 200
 _MAX_CSV_ROW_COUNT = 10000
-
 
 # Explicitly load Cate-internal plugins.
 __import__('cate.ds')
@@ -401,38 +401,40 @@ class ResVarCsvHandler(WorkspaceResourceHandler):
         try:
             _, _, _, resource = self.get_workspace_resource(base_dir, res_id)
             var_name = self.get_query_argument('var', default=None)
+            offset = self.get_query_argument_int('offset', default=0)
+            count = self.get_query_argument_int('count', default=_DEFAULT_ROW_PER_PAGE)
 
             var_data = resource
             if var_name:
                 try:
                     var_data = resource[var_name]
-                except Exception as e:
+                except Exception:
                     self.write_status_error(exc_info=sys.exc_info())
                     return
+
+            print(type(var_data))
 
             # noinspection PyBroadException
             try:
                 # assume var_data is a pandas.dataframe
                 dataframe = var_data
                 num_rows, _ = dataframe.shape
-                if num_rows > _MAX_CSV_ROW_COUNT:
-                    dataframe = dataframe[:_MAX_CSV_ROW_COUNT]
-                csv = dataframe.to_csv()
+                dataframe = dataframe[offset:(offset + count)]
+                json = dataframe.to_json()
             except Exception:
                 # noinspection PyBroadException
                 try:
                     # assume var_data is a xarray.dataset or xarray.dataarray
                     dataframe = var_data.to_dataframe()
                     num_rows, _ = dataframe.shape
-                    if num_rows > _MAX_CSV_ROW_COUNT:
-                        dataframe = dataframe[:_MAX_CSV_ROW_COUNT]
-                    csv = dataframe.to_csv()
+                    dataframe = dataframe[offset:(offset + count)]
+                    json = dataframe.to_dict()
                 except Exception:
-                    csv = var_data.to_series().to_csv()
+                    json = var_data.to_series().to_json()
 
-            self.set_header('Content-Type', 'text/csv')
-            self.write(csv)
-        except Exception as e:
+            self.set_header('Content-Type', 'application/json')
+            self.write(json)
+        except Exception:
             self.write_status_error(exc_info=sys.exc_info())
 
         self.finish()

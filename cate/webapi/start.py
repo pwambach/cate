@@ -109,6 +109,7 @@ def create_application():
         (url_pattern('/ws/res/geojson/{{base_dir}}/{{res_id}}'), ResFeatureCollectionHandler),
         (url_pattern('/ws/res/geojson/{{base_dir}}/{{res_id}}/{{feature_index}}'), ResFeatureHandler),
         (url_pattern('/ws/res/csv/{{base_dir}}/{{res_id}}'), ResVarCsvHandler),
+        # (url_pattern('/ws/res/csv/{{base_dir}}/{{res_id}}/info'), VarCsvInfoHandler),
         (url_pattern('/ws/res/html/{{base_dir}}/{{res_id}}'), ResVarHtmlHandler),
         (url_pattern('/ws/res/tile/{{base_dir}}/{{res_id}}/{{z}}/{{y}}/{{x}}.png'), ResVarTileHandler),
         (url_pattern('/ws/ne2/tile/{{z}}/{{y}}/{{x}}.jpg'), NE2Handler),
