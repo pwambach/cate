@@ -48,7 +48,7 @@ from cate.ops.normalize import adjust_spatial_attrs
 
 @op(tags=['geometric', 'coregistration'],
     version='1.1')
-@op_input('method_us', value_set=['nearest', 'linear'])
+@op_input('method_us', value_set=['nearest', 'linear', 'splinef2d'])
 @op_input('method_ds', value_set=['first', 'last', 'mean', 'mode', 'var', 'std'])
 @op_return(add_history=True)
 def coregister(ds_master: xr.Dataset,
@@ -134,10 +134,10 @@ def coregister(ds_master: xr.Dataset,
                                   ' coregistration'.format(array[0]))
 
     # Co-register
-    methods_us = {'nearest': 10, 'linear': 11}
+    # methods_us = {'nearest': 10, 'linear': 11}
     methods_ds = {'first': 50, 'last': 51, 'mean': 54, 'mode': 56, 'var': 57, 'std': 58}
 
-    return _resample_dataset(ds_master, ds_slave, methods_us[method_us], methods_ds[method_ds], monitor)
+    return _resample_dataset(ds_master, ds_slave, method_us, methods_ds[method_ds], monitor)
 
 
 def _is_equidistant(array: np.ndarray) -> bool:
@@ -272,7 +272,7 @@ def _resample_array(array: xr.DataArray, lon: xr.DataArray, lat: xr.DataArray, m
                             attrs=array.attrs).chunk(chunks=chunks)
 
 
-def _resample_dataset(ds_master: xr.Dataset, ds_slave: xr.Dataset, method_us: int, method_ds: int, monitor: Monitor) -> xr.Dataset:
+def _resample_dataset(ds_master: xr.Dataset, ds_slave: xr.Dataset, method_us: str, method_ds: int, monitor: Monitor) -> xr.Dataset:
     """
     Resample slave onto the grid of the master.
     This does spatial resampling the whole dataset, e.g., all
@@ -308,6 +308,7 @@ def _resample_dataset(ds_master: xr.Dataset, ds_slave: xr.Dataset, method_us: in
     lon = ds_master['lon'].sel(lon=lon_slice)
     lat = ds_master['lat'].sel(lat=lat_slice)
     ds_slave = ds_slave.sel(lon=lon_slice, lat=lat_slice)
+    return ds_slave.interp(lon=lon, lat=lat, method=method_us)
 
     with monitor.starting("coregister dataset", len(ds_slave.data_vars)):
         kwargs = {'lon': lon, 'lat': lat, 'method_us': method_us, 'method_ds': method_ds, 'parent_monitor': monitor}
