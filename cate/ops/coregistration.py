@@ -343,11 +343,28 @@ def _downsample_ds(ds: xr.Dataset,
             lon_stride = lon_win_size
         else:
             lon_stride = lon_win_size - 1
-        retset = ds.rolling(lon=lon_win_size, center=True).construct('window', stride=lon_stride).mean('window', skipna=False)
-        retset = retset.rolling(lat=lat_win_size, center=True).construct('window', stride=lat_stride).mean('window', skipna=False)
+#        retset = ds.rolling(lon=lon_win_size).construct('window', stride=lon_stride).mean('window', skipna=False)
+#        retset = retset.rolling(lat=lat_win_size).construct('window', stride=lat_stride).mean('window', skipna=False)
+        retset = ds.rolling(lon=lon_win_size).construct('window', stride=lon_stride).groupby('lon').\
+            apply(_reduce_win, dim='lon', method='mean')
+        retset = retset.rolling(lat=lat_win_size).construct('window', stride=lat_stride).groupby('lat').\
+            apply(_reduce_win, dim='lat', method='mean')
         retset['lon'] = lon
         retset['lat'] = lat
         return retset
+
+
+def _reduce_win(ds: xr.Dataset, dim: str, method: str = 'mean') -> xr.Dataset:
+    """
+    Reduce window
+    """
+    src_lat0 = ds[dim].values[0]
+    # Create the 'lat' weights array
+    # Mask np.nan with 0?
+    # Do a dot product with weights
+    # Sum weights
+    # Divide dot product/weights
+    pass
 
 
 def _upsample_ds(ds: xr.Dataset,
