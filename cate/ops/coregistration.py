@@ -48,8 +48,8 @@ from cate.ops.normalize import adjust_spatial_attrs
 
 @op(tags=['geometric', 'coregistration'],
     version='1.1')
-@op_input('method_us', value_set=['nearest', 'linear', 'splinef2d'])
-@op_input('method_ds', value_set=['first', 'last', 'mean', 'mode', 'var', 'std'])
+@op_input('method_us', value_set=['nearest', 'linear'])
+@op_input('method_ds', value_set=['mean', 'nearest', 'linear'])
 @op_return(add_history=True)
 def coregister(ds_master: xr.Dataset,
                ds_slave: xr.Dataset,
@@ -137,7 +137,7 @@ def coregister(ds_master: xr.Dataset,
     # methods_us = {'nearest': 10, 'linear': 11}
     methods_ds = {'first': 50, 'last': 51, 'mean': 54, 'mode': 56, 'var': 57, 'std': 58}
 
-    return _resample_dataset(ds_master, ds_slave, method_us, methods_ds[method_ds], monitor)
+    return _resample_dataset(ds_master, ds_slave, method_us, method_ds, monitor)
 
 
 def _is_equidistant(array: np.ndarray) -> bool:
@@ -272,7 +272,7 @@ def _resample_array(array: xr.DataArray, lon: xr.DataArray, lat: xr.DataArray, m
                             attrs=array.attrs).chunk(chunks=chunks)
 
 
-def _resample_dataset(ds_master: xr.Dataset, ds_slave: xr.Dataset, method_us: str, method_ds: int, monitor: Monitor) -> xr.Dataset:
+def _resample_dataset(ds_master: xr.Dataset, ds_slave: xr.Dataset, method_us: str, method_ds: str, monitor: Monitor) -> xr.Dataset:
     """
     Resample slave onto the grid of the master.
     This does spatial resampling the whole dataset, e.g., all
@@ -308,13 +308,56 @@ def _resample_dataset(ds_master: xr.Dataset, ds_slave: xr.Dataset, method_us: st
     lon = ds_master['lon'].sel(lon=lon_slice)
     lat = ds_master['lat'].sel(lat=lat_slice)
     ds_slave = ds_slave.sel(lon=lon_slice, lat=lat_slice)
-    return ds_slave.interp(lon=lon, lat=lat, method=method_us)
 
-    with monitor.starting("coregister dataset", len(ds_slave.data_vars)):
-        kwargs = {'lon': lon, 'lat': lat, 'method_us': method_us, 'method_ds': method_ds, 'parent_monitor': monitor}
-        retset = ds_slave.apply(_resample_array, keep_attrs=True, **kwargs)
+    # Determine width and height scale
+    scale_lon = ds_slave.lon.size / ds_master.lon.size
+    scale_lat = ds_slave.lat.size / ds_master.lat.size
+
+    if scale_lon > 1 and scale_lat > 1:
+        retset = _downsample_ds(ds_slave, lon, lat, method_ds)
+    else:
+        retset = _upsample_ds(ds_slave, lon, lat, method_us)
 
     return adjust_spatial_attrs(retset)
+
+
+def _downsample_ds(ds: xr.Dataset,
+                   lon: xr.DataArray,
+                   lat: xr.DataArray,
+                   method: str) -> xr.Dataset:
+    """
+    Downsample the dataset
+    """
+    if method == 'linear' or method == 'nearest':
+        return ds.interp(lon=lon, lat=lat, method=method)
+    elif method == 'mean':
+        scale_lon = ds.lon.size / lon.size
+        scale_lat = ds.lat.size / lat.size
+        lon_win_size = math.ceil(scale_lon)
+        lat_win_size = math.ceil(scale_lat)
+        if scale_lat % 1 == 0:
+            lat_stride = lat_win_size
+        else:
+            lat_stride = lat_win_size - 1
+        if scale_lon % 1 == 0:
+            lon_stride = lon_win_size
+        else:
+            lon_stride = lon_win_size - 1
+        retset = ds.rolling(lon=lon_win_size, center=True).construct('window', stride=lon_stride).mean('window', skipna=False)
+        retset = retset.rolling(lat=lat_win_size, center=True).construct('window', stride=lat_stride).mean('window', skipna=False)
+        retset['lon'] = lon
+        retset['lat'] = lat
+        return retset
+
+
+def _upsample_ds(ds: xr.Dataset,
+                 lon: xr.DataArray,
+                 lat: xr.DataArray,
+                 method: str) -> xr.Dataset:
+    """
+    Upsample the dataset
+    """
+    return ds.interp(lon=lon, lat=lat, method=method)
 
 
 def _find_intersection(first: np.ndarray,
