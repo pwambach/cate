@@ -7,6 +7,8 @@
     - Changed all xarray.Dataset.drop to xarray.Dataset.drop_vars
     - Changed Dataset.time.values = [array] to Dataset['time'] = [array] in Pearson's
       computation
+* Limited `gdal` version to be less than version 3 to be compatible 
+  with `fiona` version 1.8.x.
 
 ## Version 2.0.0
 

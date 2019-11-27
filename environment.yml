@@ -15,6 +15,7 @@ dependencies:
   - geopandas>=0.4.0
   - geos>=3.7.1
   - geotiff>=1.4.2
+  - gdal>=2.4,<3.0
   - h5netcdf>=0.6
   - h5py>=2.10
   - hdf4>=4.2.13
