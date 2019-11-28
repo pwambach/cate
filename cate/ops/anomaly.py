@@ -121,7 +121,7 @@ def anomaly_external(ds: xr.Dataset,
 
     # Running groupby results in a redundant 'month' variable being added to
     # the dataset
-    ret = ret.drop('month')
+    ret = ret.drop_vars('month')
     ret.attrs = ds.attrs
     # The dataset may be cropped
     return adjust_spatial_attrs(ret)

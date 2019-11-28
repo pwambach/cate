@@ -922,7 +922,7 @@ class EsaCciOdpDataSource(DataSource):
                             child_monitor.progress(work=20)
 
                             if var_names:
-                                remote_dataset = remote_dataset.drop(
+                                remote_dataset = remote_dataset.drop_vars(
                                     [var_name for var_name in remote_dataset.data_vars.keys()
                                      if var_name not in var_names]
                                 )

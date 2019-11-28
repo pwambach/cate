@@ -215,7 +215,7 @@ def _lta_general(ds: xr.Dataset, monitor: Monitor):
 
     # Turn month, day coordinates to time
     retset = retset.reset_index('time')
-    retset = retset.drop(['month', 'day'])
+    retset = retset.drop_vars(['month', 'day'])
     retset['time'] = rep_year.time
 
     climatology_bounds = xr.DataArray(data=np.tile([time_min, time_max],

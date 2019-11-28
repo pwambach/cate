@@ -12,5 +12,5 @@ ofile = args[2]
 vars = args[3:]
 
 ds = xr.open_dataset(ifile)
-ds = ds.drop(vars)
+ds = ds.drop_vars(vars)
 ds.to_netcdf(ofile)

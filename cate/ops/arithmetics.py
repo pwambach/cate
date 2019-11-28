@@ -139,8 +139,8 @@ def diff(ds: xr.Dataset,
             # If the datasets don't intersect in time dimension, a naive difference
             # would return empty data variables. Hence, the time coordinate has to
             # be dropped beforehand
-            ds = ds.drop('time')
-            ds2 = ds2.drop('time')
+            ds = ds.drop_vars('time')
+            ds2 = ds2.drop_vars('time')
             return ds - ds2
     except AttributeError:
         # It is likely that the one operand is a lat/lon array that can be
