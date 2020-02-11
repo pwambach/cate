@@ -53,6 +53,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
+            'jupyter-cateservice = cate.webapi.start:main',
             'cate = cate.cli.main:main',
             'cate-webapi-start = cate.webapi.start:main',
             'cate-webapi-stop = cate.webapi.stop:main',

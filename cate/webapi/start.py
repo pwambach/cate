@@ -43,12 +43,14 @@ Components
 import os
 import warnings
 
-warnings.filterwarnings("ignore")  # never print any warnings to users
 import sys
 from datetime import date
 
+from jupyter_core.application import JupyterApp, base_flags
 from tornado.web import Application, StaticFileHandler
+
 from matplotlib.backends.backend_webagg_core import FigureManagerWebAgg
+from traitlets import Integer
 
 from cate.conf.defaults import WEBAPI_LOG_FILE_PREFIX, WEBAPI_PROGRESS_DEFER_PERIOD
 from cate.core.pathmanag import PathManager
@@ -62,6 +64,8 @@ from cate.webapi.rest import ResourcePlotHandler, CountriesGeoJSONHandler, ResVa
 from cate.webapi.mpl import MplJavaScriptHandler, MplDownloadHandler, MplWebSocketHandler
 from cate.webapi.websocket import WebSocketService
 from cate.webapi.service import SERVICE_NAME, SERVICE_TITLE
+
+warnings.filterwarnings("ignore")  # never print any warnings to users
 
 # Explicitly load Cate-internal plugins.
 __import__('cate.ds')
@@ -127,14 +131,47 @@ def create_application():
     return application
 
 
-def main(args=None) -> int:
-    return run_start(SERVICE_NAME,
-                     'Starts a new {}'.format(SERVICE_TITLE),
-                     __version__,
-                     application_factory=create_application,
-                     log_file_prefix=WEBAPI_LOG_FILE_PREFIX,
-                     args=args)
+# def main(args=None) -> int:
+#     return run_start(SERVICE_NAME,
+#                      'Starts a new {}'.format(SERVICE_TITLE),
+#                      __version__,
+#                      application_factory=create_application,
+#                      log_file_prefix=WEBAPI_LOG_FILE_PREFIX,
+#                      args=args)
 
 
-if __name__ == "__main__":
-    sys.exit(main())
+lab_flags = dict(base_flags)
+lab_flags['p'] = (
+    {'CateHub': {'p': 9090}},
+    "Start the app with port"
+)
+
+lab_flags['p'] = (
+    {'CateHub': {'p': 9090}},
+    "Start the app with port"
+)
+
+
+class CateHub(JupyterApp):
+    flags = lab_flags
+
+    p = Integer(9090, config=True, help="")
+
+    # noinspection PyMethodMayBeStatic
+    def start(self):
+        return run_start(SERVICE_NAME,
+                         'Starts a new {}'.format(SERVICE_TITLE),
+                         __version__,
+                         application_factory=create_application,
+                         log_file_prefix=WEBAPI_LOG_FILE_PREFIX,
+                         args=self.argv)
+
+
+main = launch_new_instance = CateHub.launch_instance
+
+if __name__ == '__main__':
+    main()
+
+#
+# if __name__ == "__main__":
+#     sys.exit(main())
